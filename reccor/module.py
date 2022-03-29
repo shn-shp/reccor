@@ -31,7 +31,7 @@ class Module(ABC):
         self.config = config
 
     @abstractmethod
-    def read(self, name: str, data: io.BytesIO, attributes: typing.Dict) \
+    def read(self, name: str, data: io.BytesIO, attributes: typing.Optional[typing.Dict] = None) \
             -> typing.Optional[Record]:
         """
         Creates a record from the provided buffer

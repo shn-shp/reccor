@@ -6,7 +6,7 @@ This source code is licensed under the BSD-style license found in the
 LICENSE file in the root directory of this source tree.
 """
 
-import os
+import time
 import typing
 import io
 
@@ -30,10 +30,12 @@ class Record:
     duration: int
     attributes: typing.Dict
 
-    def __init__(self, name: str, data: io.BytesIO, attributes: typing.Dict):
+    def __init__(self, name: str, data: io.BytesIO, attributes: typing.Optional[typing.Dict] = None):
         self.name = name
         self.original_names = [name]
         self.data = data
-        self.timestamp = os.stat(name).st_mtime_ns
+        self.timestamp = time.time_ns()
         self.duration = 0
+        if not attributes:
+            attributes = dict()
         self.attributes = attributes
