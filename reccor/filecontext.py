@@ -17,7 +17,7 @@ from reccor.record import Record
 logger = logging.getLogger(__name__)
 
 
-class Context:
+class FileContext:
     """ A wrapper around the common functions of reccor.
 
         Attributes:
@@ -47,7 +47,7 @@ class Context:
                     if record is not None:
                         records.append(record)
             else:
-                logger.warning(f"{fp} is not a io")
+                logger.warning(f"{fp} is not a file")
 
         return records
 
@@ -76,7 +76,7 @@ class Context:
             for i in range(1, len(records)):
                 matched = False
                 for j in range(0, len(result)):
-                    if self.module.compare(records[i], result[j][0]):
+                    if self.module.compare(records[i], result[j][-1]):
                         result[j].append(records[i])
                         matched = True
                         break

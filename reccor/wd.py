@@ -15,7 +15,7 @@ from watchdog.observers import Observer
 import watchdog
 import typing
 
-from reccor.context import Context
+from reccor.filecontext import FileContext
 from reccor.record import Record
 
 logger = logging.getLogger(__name__)
@@ -30,9 +30,9 @@ class EventHandler(watchdog.events.FileSystemEventHandler):
     """
 
     files: typing.List[str]
-    ctx: Context
+    ctx: FileContext
 
-    def __init__(self, ctx: Context):
+    def __init__(self, ctx: FileContext):
         self.ctx = ctx
         self.files = list()
 
@@ -45,12 +45,12 @@ class Watchdog:
     __eventHandler: EventHandler
     __watch_dir: str
     __output_dir: str
-    __ctx: Context
+    __ctx: FileContext
     __delete: bool
     __timedifference: int
     __maxRecordAge: int
 
-    def __init__(self, ctx: Context, watch_dir: str, output_dir: str, delete: bool = False, maxRecordAge: int = 0, timedifference: int =0):
+    def __init__(self, ctx: FileContext, watch_dir: str, output_dir: str, delete: bool = False, maxRecordAge: int = 0, timedifference: int =0):
         self.__eventHandler = EventHandler(ctx=ctx)
         self.__watch_dir = watch_dir
         self.__output_dir = output_dir
