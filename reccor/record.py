@@ -19,23 +19,20 @@ class Record:
             original_names  This record is a result of mering those records
             data            The data payload. Usually the file content
             timestamp       The time of the record. For example the last modification date of the file
-            duration        The duration of the record. For example the length of an audio file
             attributes      Additional meta data, which can be used for correlating and merging
     """
 
     name: str
     original_names: typing.List[str]
     data: io.BytesIO
-    timestamp: int
-    duration: int
+    timestamp: float
     attributes: typing.Dict
 
     def __init__(self, name: str, data: io.BytesIO, attributes: typing.Optional[typing.Dict] = None):
         self.name = name
         self.original_names = [name]
         self.data = data
-        self.timestamp = time.time_ns()
-        self.duration = 0
+        self.timestamp = time.time()
         if not attributes:
             attributes = dict()
         self.attributes = attributes

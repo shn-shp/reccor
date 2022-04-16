@@ -47,19 +47,15 @@ class Watchdog:
     __output_dir: str
     __ctx: FileContext
     __delete: bool
-    __timedifference: int
-    __maxRecordAge: int
 
-    def __init__(self, ctx: FileContext, watch_dir: str, output_dir: str, delete: bool = False, maxRecordAge: int = 0, timedifference: int =0):
+    def __init__(self, ctx: FileContext, watch_dir: str, output_dir: str, delete: bool = False):
         self.__eventHandler = EventHandler(ctx=ctx)
         self.__watch_dir = watch_dir
         self.__output_dir = output_dir
         self.__ctx = ctx
         self.__delete = delete
-        self.__maxRecordAge = maxRecordAge
-        self.__timedifference = timedifference
 
-    def run(self, sleep_duration: int = 1, loop_limit: int = -1):
+    def run(self, max_age: int):
         observer = Observer()
         observer.schedule(self.__eventHandler, self.__watch_dir, recursive=False)
         observer.start()
@@ -68,31 +64,16 @@ class Watchdog:
             records = list()
             while True:
                 records.extend(self.__ctx.read(fps=self.__eventHandler.files))
-                correlated_records = self.__ctx.correlate(records=records, max_timediff=self.__timedifference)
-                records = self.__ctx.merge(correlated_records=correlated_records)
+                correlated_records = self.__ctx.correlate(records=records)
 
-                finished_records = []
-                if self.__timedifference == 0:
-                    finished_records = records
-                    records = []
-                else:
-                    now = time.time()
-                    tmp = []
-                    for record in records:
-                        if now - (record.timestamp + record.duration) > self.__maxRecordAge:
-                            finished_records.append(record)
-                        else:
-                            tmp.append(record)
-                    records = tmp
+                now = time.time()
+                finished_records = [x for x in correlated_records if max_age < now - x.timestamp]
+                records = [x for x in correlated_records if x not in finished_records]
 
                 self.__write(records=finished_records)
 
                 self.__eventHandler.files = []
-                time.sleep(sleep_duration)
-                if loop_limit > 0:
-                    loop_limit = loop_limit - 1
-                elif loop_limit == 0:
-                    break
+                time.sleep(1)
         finally:
             observer.stop()
             observer.join()

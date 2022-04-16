@@ -53,10 +53,11 @@ class Module(ABC):
         pass
 
     @abstractmethod
-    def process(self, group: typing.List[Record]) -> Record:
+    def process(self, r1: Record, r2: Record) -> Record:
         """
-        Merges records together
-        :param group: List of correlated records
-        :return: Merged record
+        Merges two records / select of of two records
+        :param r1: The first Record
+        :param r2: The second Record
+        :return: record
         """
         pass

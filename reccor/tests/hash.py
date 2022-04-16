@@ -37,6 +37,5 @@ def test_process(hash_function):
     data = [
         module.read(name="1", data=io.BytesIO(bytes("123", 'ascii'))),
         module.read(name="2", data=io.BytesIO(bytes("123", 'ascii'))),
-        module.read(name="3", data=io.BytesIO(bytes("123", 'ascii'))),
     ]
-    assert module.process(group=data).name == "1"
+    assert module.process(r1=data[0], r2=data[1]).name == "1"

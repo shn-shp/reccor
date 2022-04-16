@@ -45,57 +45,35 @@ class FileContext:
                     buf = io.BytesIO(f.read())
                     record = self.module.read(name=fp, data=buf, attributes={"file_attributes": os.stat(fp)})
                     if record is not None:
+                        record.timestamp = record.attributes['file_attributes'].st_mtime
                         records.append(record)
             else:
                 logger.warning(f"{fp} is not a file")
 
         return records
 
-    def correlate(self, records: typing.List[Record], max_timediff: int = 0) -> typing.List[typing.List[Record]]:
+    def correlate(self, records: typing.List[Record]) -> typing.List[Record]:
         """
-        Groups the given records
-        :param records: Records which should be compared
-        :param max_timediff: Maximal time difference between records to be considered as similar. Ignored if 0.
+        Correlates the given records
+        :param records: Records which should be correlated
         :return: Correlated records
         """
         if len(records) == 0:
             return list()
 
-        # correlate by time, reduces the following comparisons
-        result = [[records[0]]]
-        if max_timediff != 0:
-            records.sort(key=lambda x: x.timestamp)
-            for i in range(1, len(records)):
-                last_record = result[-1][-1]
-                ts = last_record.timestamp + last_record.duration
-                if records[i].timestamp - ts < max_timediff and self.module.compare(last_record, records[i]):
-                    result[-1].append(records[i])
-                else:
-                    result.append([records[i]])
-        else:
-            for i in range(1, len(records)):
-                matched = False
-                for j in range(0, len(result)):
-                    if self.module.compare(records[i], result[j][-1]):
-                        result[j].append(records[i])
-                        matched = True
-                        break
-                if not matched:
-                    result.append([records[i]])
+        results = [records[0]]
 
-        return result
+        for i in range(1, len(records)):
+            matched = False
+            for j in range(0, len(results)):
+                if self.module.compare(records[i], results[j]):
+                    original_names = records[i].original_names + results[j].original_names
+                    results[j] = self.module.process(r1=records[i], r2=results[j])
+                    results[j].original_names = original_names
+                    matched = True
+                    break
+            if not matched:
+                results.append(records[i])
 
-    def merge(self, correlated_records: typing.List[typing.List[Record]]) -> typing.List[Record]:
-        """
-        Merge the given correlated records to one record
-        :param correlated_records: List of correlated records
-        :return: List of merged records
-        """
-        result = []
-        for cr in correlated_records:
-            rec = self.module.process(cr)
-            rec.original_names = [r.original_names for r in cr ]
-            rec.original_names = [item for sublist in rec.original_names for item in sublist] # flattend
-            result.append(rec)
-        return result
+        return results
 

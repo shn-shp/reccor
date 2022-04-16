@@ -49,5 +49,5 @@ class Module(Module):
     def compare(self, r1: Record, r2: Record) -> bool:
         return r1.attributes["hash"] == r2.attributes["hash"]
 
-    def process(self, group: typing.List[Record]) -> Record:
-        return min(group, key=lambda x: x.timestamp)
+    def process(self, r1: Record, r2: Record) -> Record:
+        return min([r1, r2], key=lambda x: x.timestamp)

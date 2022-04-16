@@ -44,9 +44,9 @@ def get_module_description() -> str:
 
 def load_module(name_or_path: str) -> ModuleType:
     print(os.path.dirname(os.path.realpath(__file__)))
-    if name_or_path in [ x[:-3] for x in os.listdir(modules_path) ]:
+    if name_or_path in [ x[:-3] for x in os.listdir(modules_path)]:
         try:
-            p = os.path.join(modules_path, name_or_path +".py")
+            p = os.path.join(modules_path, name_or_path + ".py")
             spec = importlib.util.spec_from_file_location("module", p)
             mdl = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(mdl)
@@ -72,9 +72,10 @@ def main():
     parser.add_argument("indir", type=str, help="Folder which should be processed")
     parser.add_argument("outdir", type=str, help="Folder where processed files are stored")
     parser.add_argument("-d", "--delete", action="store_true", help="Delete processed files")
-    parser.add_argument("-t", "--timedifference", type=int, help="Maximal time difference between records", default=0)
-    parser.add_argument("-m", "--maxRecordAge", type=int, help="Merge records if timestap + duration is older than"
-                                                               "maxRecordAge", default=0)
+
+    parser.add_argument("--maxAge", type=int, help="Correlated records older than this amount of time "
+                                                   "are considered as finished (sec, default: 1)", default=1)
+
     args = parser.parse_args()
 
     root = logging.getLogger()
@@ -102,10 +103,9 @@ def main():
 
     ctx = FileContext(module=module)
 
-    wd = Watchdog(ctx=ctx, watch_dir=args.indir, output_dir=args.outdir, delete=args.delete,
-                  maxRecordAge=args.maxRecordAge, timedifference=args.timedifference)
+    wd = Watchdog(ctx=ctx, watch_dir=args.indir, output_dir=args.outdir, delete=args.delete)
 
-    wd.run(sleep_duration=1, loop_limit=-1)
+    wd.run(max_age=args.maxAge)
 
 
 if __name__ == '__main__':
