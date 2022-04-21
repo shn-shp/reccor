@@ -71,9 +71,10 @@ def main():
     parser.add_argument("indir", type=str, help="Folder which should be processed")
     parser.add_argument("outdir", type=str, help="Folder where processed files are stored")
     parser.add_argument("-d", "--delete", action="store_true", help="Delete processed files")
-
-    parser.add_argument("--maxAge", type=int, help="Correlated records older than this amount of time "
-                                                   "are considered as finished (sec, default: 1)", default=1)
+    parser.add_argument("--maxAge", type=float, help="Correlated records older than this amount of time are considered "
+                                                     "as finished (sec, default: 1)", default=1)
+    parser.add_argument("--maxIdleAge", type=float, help="Maximal time a records remains queued since its last update. "
+                                                         "Ignored if negative (sef, default: -1)", default=-1)
 
     args = parser.parse_args()
 
@@ -100,9 +101,10 @@ def main():
 
     module = module_t.Module(config=config)
 
-    wd = Watchdog(module=module, watch_dir=args.indir, output_dir=args.outdir, delete=args.delete)
+    wd = Watchdog(module=module, watch_dir=args.indir, output_dir=args.outdir, max_age=args.maxAge,
+                  max_idle_age=args.maxIdleAge, delete=args.delete)
 
-    wd.run(max_age=args.maxAge)
+    wd.run()
 
 
 if __name__ == '__main__':

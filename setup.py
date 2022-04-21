@@ -3,7 +3,7 @@
 from distutils.core import setup
 
 setup(name='reccor',
-      version='0.0.2',
+      version='0.0.3',
       description='Python (Rec)cord (Cor)relator',
       author='shn-shp',
       url='https://github.com/shn-shp/reccor',

@@ -18,21 +18,22 @@ class Record:
             name            The name of the Record. Usually the original filepath
             original_names  This record is a result of mering those records
             data            The data payload. Usually the file content
-            timestamp       The time of the record. For example the last modification date of the file
+            timestamps      Oldest and newest timestamp of original records. For example the last modification date of
+                            those files.
             attributes      Additional meta data, which can be used for correlating and merging
     """
 
     name: str
     original_names: typing.List[str]
     data: io.BytesIO
-    timestamp: float
+    timestamps: typing.Dict
     attributes: typing.Dict
 
     def __init__(self, name: str, data: io.BytesIO, attributes: typing.Optional[typing.Dict] = None):
         self.name = name
         self.original_names = [name]
         self.data = data
-        self.timestamp = time.time()
+        self.timestamps = {'min': time.time(), 'max': time.time()}
         if not attributes:
             attributes = dict()
         self.attributes = attributes

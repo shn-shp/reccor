@@ -5,7 +5,7 @@ All rights reserved.
 This source code is licensed under the BSD-style license found in the
 LICENSE file in the root directory of this source tree.
 """
-
+import math
 import os
 import io
 import time
@@ -28,11 +28,19 @@ class Watchdog(watchdog.events.FileSystemEventHandler):
     __delete: bool
     __module: Module
     __files: typing.List[str]
+    __maxAge: float
+    __maxIdleAge: float
 
-    def __init__(self, module: Module, watch_dir: str, output_dir: str, delete: bool = False):
+    def __init__(self, module: Module, watch_dir: str, output_dir: str, max_age: float, max_idle_age: float,
+                 delete: bool = False):
         self.__module = module
         self.__watch_dir = watch_dir
         self.__output_dir = output_dir
+        self.__maxAge = max_age
+        if max_idle_age < 0:
+            self.__maxIdleAge = math.inf
+        else:
+            self.__maxIdleAge = max_idle_age
         self.__delete = delete
         self.__files = list()
 
@@ -42,7 +50,7 @@ class Watchdog(watchdog.events.FileSystemEventHandler):
     def on_moved(self, event):
         self.__files.append(event.dest_path)
 
-    def run(self, max_age: int):
+    def run(self):
         observer = Observer()
         observer.schedule(self, self.__watch_dir, recursive=False)
         observer.start()
@@ -51,11 +59,12 @@ class Watchdog(watchdog.events.FileSystemEventHandler):
             records = list()
             while True:
                 records.extend(self.__read(fps=self.__files))
-                records.sort(key=lambda x: x.timestamp)
+                records.sort(key=lambda x: x.timestamps['min'])
                 correlated_records = self.__correlate(records=records)
 
                 now = time.time()
-                finished_records = [x for x in correlated_records if max_age < now - x.timestamp]
+                finished_records = [x for x in correlated_records if self.__maxAge < now - x.timestamps['min'] or
+                                    self.__maxIdleAge < now - x.timestamps['max']]
                 records = [x for x in correlated_records if x not in finished_records]
 
                 self.__write(records=finished_records)
@@ -104,8 +113,10 @@ class Watchdog(watchdog.events.FileSystemEventHandler):
             for j in range(0, len(results)):
                 if self.__module.compare(records[i], results[j]):
                     original_names = records[i].original_names + results[j].original_names
+                    timestamps = list(records[i].timestamps.values()) + list(records[j].timestamps.values())
                     results[j] = self.__module.process(r1=records[i], r2=results[j])
                     results[j].original_names = original_names
+                    results[j].timestamps = { 'min': min(timestamps), 'max': max(timestamps)}
                     matched = True
                     break
             if not matched:
