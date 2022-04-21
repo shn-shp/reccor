@@ -22,46 +22,35 @@ from reccor.record import Record
 logger = logging.getLogger(__name__)
 
 
-class EventHandler(watchdog.events.FileSystemEventHandler):
-    """ Gathers files via Inotify
-
-        Attributes:
-            files   Found files
-    """
-
-    files: typing.List[str]
-
-    def __init__(self):
-        self.files = list()
-
-    def on_closed(self, event):
-        self.files.append(event.src_path)
-
-
-class Watchdog:
-
-    __eventHandler: EventHandler
+class Watchdog(watchdog.events.FileSystemEventHandler):
     __watch_dir: str
     __output_dir: str
     __delete: bool
     __module: Module
+    __files: typing.List[str]
 
     def __init__(self, module: Module, watch_dir: str, output_dir: str, delete: bool = False):
         self.__module = module
-        self.__eventHandler = EventHandler()
         self.__watch_dir = watch_dir
         self.__output_dir = output_dir
         self.__delete = delete
+        self.__files = list()
+
+    def on_closed(self, event):
+        self.__files.append(event.src_path)
+
+    def on_moved(self, event):
+        self.__files.append(event.dest_path)
 
     def run(self, max_age: int):
         observer = Observer()
-        observer.schedule(self.__eventHandler, self.__watch_dir, recursive=False)
+        observer.schedule(self, self.__watch_dir, recursive=False)
         observer.start()
 
         try:
             records = list()
             while True:
-                records.extend(self.__read(fps=self.__eventHandler.files))
+                records.extend(self.__read(fps=self.__files))
                 records.sort(key=lambda x: x.timestamp)
                 correlated_records = self.__correlate(records=records)
 
@@ -71,7 +60,7 @@ class Watchdog:
 
                 self.__write(records=finished_records)
 
-                self.__eventHandler.files = []
+                self.__files = []
                 time.sleep(1)
         finally:
             observer.stop()
@@ -124,7 +113,11 @@ class Watchdog:
 
         return results
 
-    def __write(self, records: typing.List[Record]):
+    def __write(self, records: typing.List[Record]) -> None:
+        """
+        Persists the given records
+        :param records: Record which should be persisted
+        """
         for rec in records:
             fp = os.path.join(self.__output_dir, os.path.basename(rec.name))
             with open(fp, 'wb') as of:
