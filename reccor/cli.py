@@ -15,7 +15,6 @@ import logging
 
 from types import ModuleType
 from reccor.wd import Watchdog
-from reccor.filecontext import FileContext
 
 logger = logging.getLogger(__name__)
 modules_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "modules")
@@ -101,9 +100,7 @@ def main():
 
     module = module_t.Module(config=config)
 
-    ctx = FileContext(module=module)
-
-    wd = Watchdog(ctx=ctx, watch_dir=args.indir, output_dir=args.outdir, delete=args.delete)
+    wd = Watchdog(module=module, watch_dir=args.indir, output_dir=args.outdir, delete=args.delete)
 
     wd.run(max_age=args.maxAge)
 
