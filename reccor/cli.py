@@ -55,7 +55,7 @@ def load_module(name_or_path: str) -> ModuleType:
             exit(-1)
     else:
         try:
-            spec = importlib.util.spec_from_file_location(name_or_path)
+            spec = importlib.util.spec_from_file_location("module", name_or_path)
             mdl = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(mdl)
             return mdl

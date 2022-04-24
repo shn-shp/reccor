@@ -1,8 +1,7 @@
 # Reccor
 *read.compare.process.* 
 
-*Reccor* is a lightweight program and framework for correlating records. It is *extensible* by design and written 
-completely in python.
+*Reccor* is a lightweight program and framework for correlating records.
 
 ## Installation
 
