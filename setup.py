@@ -3,7 +3,7 @@
 from distutils.core import setup
 
 setup(name='reccor',
-      version='0.0.3',
+      version='0.0.4',
       description='Python (Rec)cord (Cor)relator',
       author='shn-shp',
       url='https://github.com/shn-shp/reccor',
@@ -13,7 +13,7 @@ setup(name='reccor',
       ],
       license="BSD-3-Clause",
       entry_points={
-            'console_scripts': ['reccor=reccor.cli:main'],
+            'console_scripts': ['reccor=reccor.cli:main', 'reccor-module=reccor.cli:mdl'],
       },
       packages=['reccor', 'reccor.modules'],
       classifiers=[

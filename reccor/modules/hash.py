@@ -12,6 +12,14 @@ from reccor.record import Record
 import hashlib
 import io
 
+descr = """
+\033[1mHash\033[0m
+This module compare records for binary identity. The file with the oldest timestamp is returned.
+
+\033[1mConfig\033[0m
+func: "shad256" # Used hash function. sha256, sha384, md5 or sha1.
+"""
+
 
 class Module(Module):
     """ Compares Records for binary Identity

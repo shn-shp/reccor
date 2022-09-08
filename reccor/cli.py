@@ -8,7 +8,10 @@ LICENSE file in the root directory of this source tree.
 
 import argparse
 import importlib.util
+import shutil
 import sys
+import typing
+
 import yaml
 import os.path
 import logging
@@ -20,25 +23,35 @@ logger = logging.getLogger(__name__)
 modules_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "modules")
 
 
-class SmartFormatter(argparse.HelpFormatter):
+def query_yes_no(question, default="yes"):
+    """Ask a yes/no question via raw_input() and return their answer.
 
-    def _split_lines(self, text, width):
-        if text.startswith('R|'):
-            return text[2:].splitlines()
-        return argparse.HelpFormatter._split_lines(self, text, width)
+    "question" is a string that is presented to the user.
+    "default" is the presumed answer if the user just hits <Enter>.
+            It must be "yes" (the default), "no" or None (meaning
+            an answer is required of the user).
 
+    The "answer" return value is True for "yes" or False for "no".
+    """
+    valid = {"yes": True, "y": True, "ye": True, "no": False, "n": False}
+    if default is None:
+        prompt = " [y/n] "
+    elif default == "yes":
+        prompt = " [Y/n] "
+    elif default == "no":
+        prompt = " [y/N] "
+    else:
+        raise ValueError("invalid default answer: '%s'" % default)
 
-def get_module_description() -> str:
-    descr = "R|The module determines how records are compared, grouped and processed.\n" \
-            "Modules:\n"
-
-    module_descr = {
-        "hash": "Compares records for binary identity by using a hash function"
-    }
-    for k, v in module_descr.items():
-        descr += f"\t- {k}\t\t{v}\n"
-
-    return descr
+    while True:
+        sys.stdout.write(question + prompt)
+        choice = input().lower()
+        if default is not None and choice == "":
+            return valid[default]
+        elif choice in valid:
+            return valid[choice]
+        else:
+            sys.stdout.write("Please respond with 'yes' or 'no' " "(or 'y' or 'n').\n")
 
 
 def load_module(name_or_path: str) -> ModuleType:
@@ -65,8 +78,9 @@ def load_module(name_or_path: str) -> ModuleType:
 
 
 def main():
-    parser = argparse.ArgumentParser(formatter_class=SmartFormatter)
-    parser.add_argument("module", type=str, help=get_module_description())
+    parser = argparse.ArgumentParser(description="Consumes the files of a folder, compares them and merges them "
+                                                 "depending on the selected module")
+    parser.add_argument("module", type=str, help="reccor module, which should be used. Call reccor-mdl for help.")
     parser.add_argument("-c", "--config", type=str, help="A yaml file for configuring the selected module")
     parser.add_argument("indir", type=str, help="Folder which should be processed")
     parser.add_argument("outdir", type=str, help="Folder where processed files are stored")
@@ -107,5 +121,81 @@ def main():
     wd.run()
 
 
+def list_modules(args):
+    module_list = [ x for x in  os.listdir(modules_path) if x.endswith(".py") and
+                    x != "__pycache__" and x != "__init__.py"]
+    for mdl in module_list:
+        print(f"{mdl[:-3]}")
+
+
+def descr(args):
+    module_t = load_module(name_or_path=args.module_name)
+    print(module_t.descr)
+
+
+def install_module(args):
+    basename = os.path.basename(args.path)
+    target_path = os.path.join(modules_path, basename)
+    if os.path.exists(target_path):
+        if not args.force:
+            if not query_yes_no(f"{basename} is already installed. Do you wish to override it?", default="yes"):
+                print("Aborting")
+                sys.exit(0)
+
+    try:
+        os.remove(target_path)
+        shutil.copy(src=args.path, dst=target_path)
+    except OSError|shutil.Error as e:
+        logger.error(e)
+
+
+def uninstall_module(args):
+    module_list = [x[:-3] for x in os.listdir(modules_path) if x.endswith(".py") and
+                   x != "__pycache__" and x != "__init__.py"]
+    if args.module_name not in module_list:
+        logger.error(f"Module {args.module_name} not instaalled")
+        sys.exit(-1)
+    else:
+        fp = os.path.join(modules_path, args.module_name + ".py")
+        if not args.force:
+            if not query_yes_no(f"Do you really with to uninstall {args.module_name}?", default="yes"):
+                print("Aborting")
+                sys.exit(0)
+        try:
+            os.remove(fp)
+            logger.info(f"Uninstalled {args.module_name}")
+        except OSError|ValueError as e:
+            logger.error(e)
+
+
+def mdl():
+    parser = argparse.ArgumentParser(description="Manage reccor modules.")
+    subparsers = parser.add_subparsers(help="Command")
+
+    list_parser = subparsers.add_parser("list", help="List installed modules.")
+    list_parser.set_defaults(func=list_modules)
+
+    descr_parser = subparsers.add_parser("usage", help="Shows detailed instruction about a reccor module.")
+    descr_parser.set_defaults(func=descr)
+    descr_parser.add_argument("module_name", help="Name of an installed reccor module.")
+
+    install_parser = subparsers.add_parser("install", help="Install a reccor module.")
+    install_parser.set_defaults(func=install_module)
+    install_parser.add_argument("path", help="Path to a reccor module.")
+    install_parser.add_argument("-f", "--force", action="store_true", help="Force installation.")
+
+    uninstall_parser = subparsers.add_parser("uninstall", help="Uninstall a reccor module.")
+    uninstall_parser.set_defaults(func=uninstall_module)
+    uninstall_parser.add_argument("module_name", help="Name of an installed reccor module.")
+    uninstall_parser.add_argument("-f", "--force", action="store_true", help="Force deinstallation.")
+
+    args = parser.parse_args()
+    if hasattr(args, 'func'):
+        args.func(args)
+    else:
+        parser.print_usage(sys.stderr)
+
+
 if __name__ == '__main__':
-    main()
+    mdl()
+    #main()
