@@ -197,5 +197,4 @@ def mdl():
 
 
 if __name__ == '__main__':
-    mdl()
-    #main()
+    main()
